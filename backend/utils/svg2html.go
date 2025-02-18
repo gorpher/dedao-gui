@@ -3,15 +3,17 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"github.com/JoshVarga/svgparser"
+	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
+	"github.com/yann0917/dedao-dl/request"
 	"html"
+	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/JoshVarga/svgparser"
-	"github.com/yann0917/dedao-gui/backend/request"
 )
 
 var WkToPdfDir = ""
@@ -80,6 +82,7 @@ const (
 	reqEbookPageWidth = 60000
 )
 
+// 假设整本书脚注跳转符号相同
 var fnA, fnB = "", ""
 var tocLevel map[string]int
 
@@ -165,6 +168,7 @@ func Svg2Epub(outputDir, title string, svgContents []*SvgContent, opt EpubOption
 			chapterToc[tagArr[0]] = append(chapterToc[tagArr[0]], ebookToc)
 		}
 	}
+
 	for k, svgContent := range svgContents {
 		chapter, coverUrl, err1 := OneByOneHtml(eBookTypeEpub, k, svgContent, opt.Toc)
 		if err1 != nil {
@@ -300,7 +304,15 @@ func OneByOneHtml(eType string, index int, svgContent *SvgContent, toc []EbookTo
 			for i, item := range lineContent[v] {
 				// image class=epub-footnote 是注释图片
 				style := item.Style
-
+				isCode := strings.Contains(item.Style, "Code")
+				if strings.Contains(item.Style, "font-family:'PingFang SC';") && isSpecieChars(item.Content) {
+					isCode = true
+				}
+				//font-size:16px;font-family:'PingFang SC';
+				if isCode {
+					item.Content = "<span class=\"code\"  style=\"font-size:14px;color:rgb(0, 0, 0);font-family:'Source Code Pro';\">" + item.Content + "</span>"
+					//fmt.Println("isCode:", isCode, item.Content)
+				}
 				if i == 0 {
 					firstX, _ = strconv.ParseFloat(item.X, 64)
 					lastIndex := len(lineContent[v]) - 1
@@ -818,5 +830,75 @@ outer:
 			}
 		}
 	}
+	return
+}
+
+var SpecieChars = "<>{}[]\\/-+()"
+
+func isSpecieChars(s string) bool {
+	for _, v := range s {
+		for _, a := range SpecieChars {
+			if v == a {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func genPdf(buf *bytes.Buffer, fileName, coverPath string) (err error) {
+	pdfg, _ := wkhtmltopdf.NewPDFGenerator()
+
+	page := wkhtmltopdf.NewPageReader(buf)
+	page.FooterFontSize.Set(10)
+	page.FooterRight.Set("[page]")
+	page.DisableSmartShrinking.Set(true)
+
+	page.EnableLocalFileAccess.Set(true)
+	pdfg.AddPage(page)
+
+	pdfg.Cover.EnableLocalFileAccess.Set(true)
+
+	dir, _ := CurrentDir()
+	coverPath = filepath.Join(dir, coverPath)
+
+	if runtime.GOOS == "windows" {
+		pdfg.Cover.Input = coverPath
+	} else {
+		pdfg.Cover.Input = "file://" + coverPath
+	}
+
+	pdfg.Dpi.Set(300)
+
+	pdfg.TOC.Include = true
+	pdfg.TOC.TocHeaderText.Set("目 录")
+	pdfg.TOC.HeaderFontSize.Set(18)
+
+	pdfg.TOC.TocLevelIndentation.Set(15)
+	pdfg.TOC.TocTextSizeShrink.Set(0.9)
+	pdfg.TOC.DisableDottedLines.Set(false)
+	pdfg.TOC.EnableTocBackLinks.Set(true)
+
+	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
+
+	pdfg.MarginTop.Set(15)
+	pdfg.MarginBottom.Set(15)
+	pdfg.MarginLeft.Set(15)
+	pdfg.MarginRight.Set(15)
+
+	err = pdfg.Create()
+	if err != nil {
+		fmt.Printf("pdfg create err: %#v\n", err)
+		return
+	}
+
+	// Write buffer contents to file on disk
+	err = pdfg.WriteFile(fileName)
+	if err != nil {
+		fmt.Printf("\033[31;1m%s\033[0m\n", "失败"+err.Error())
+		return
+	}
+	fmt.Printf("\033[32;1m%s\033[0m\n", "完成")
+	err = os.Remove(coverPath)
 	return
 }

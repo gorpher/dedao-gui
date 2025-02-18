@@ -1,6 +1,8 @@
 module github.com/yann0917/dedao-gui
 
-go 1.20
+go 1.21
+
+toolchain go1.23.5
 
 require (
 	github.com/JoshVarga/svgparser v0.0.0-20200804023048-5eaba627a7d1
@@ -9,14 +11,15 @@ require (
 	github.com/bmaupin/go-epub v1.1.0
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
 	github.com/chromedp/chromedp v0.10.0
-	github.com/gabriel-vasile/mimetype v1.4.5
-	github.com/go-resty/resty/v2 v2.14.0
-	github.com/gomarkdown/markdown v0.0.0-20240730141124-034f12af3bf6
+	github.com/gabriel-vasile/mimetype v1.4.8
+	github.com/go-resty/resty/v2 v2.15.3
+	github.com/gomarkdown/markdown v0.0.0-20241205020045-f7e15b2f3e62
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/wailsapp/wails/v2 v2.9.1
+	github.com/yann0917/dedao-dl v1.2.8
 	golang.org/x/sync v0.10.0
 )
 
@@ -53,9 +56,9 @@ require (
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	github.com/wailsapp/go-webview2 v1.0.10 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20240525044651-4c93da0ed11d // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 )
